@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Onboarding Automation – Eichinger Digital</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f7f4ef;
+      --dark: #1a1714;
+      --ink: #2c2825;
+      --muted: #8a8278;
+      --accent: #2a6b4f;
+      --accent-light: #3d9970;
+      --accent-pale: #e8f5ef;
+      --white: #ffffff;
+    }
+
+    html, body {
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Outfit', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* ── OVERLAY ── */
+    #overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(26,23,20,0.88);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(42,107,79,0.4); }
+      50%      { box-shadow: 0 0 0 10px rgba(42,107,79,0); }
+    }
+
+    .modal {
+      background: var(--white);
+      border-radius: 20px;
+      padding: 40px 32px;
+      max-width: 440px;
+      width: 100%;
+      animation: slideUp 0.5s cubic-bezier(0.16,1,0.3,1) both;
+      position: relative;
+      overflow: hidden;
+      max-height: 95vh;
+      overflow-y: auto;
+    }
+
+    .modal-deco {
+      position: absolute;
+      top: -50px; right: -50px;
+      width: 160px; height: 160px;
+      border-radius: 50%;
+      background: var(--accent-pale);
+      pointer-events: none;
+    }
+
+    .modal-content { position: relative; z-index: 1; }
+
+    .modal-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: var(--accent-pale);
+      padding: 5px 12px;
+      border-radius: 100px;
+      margin-bottom: 18px;
+    }
+
+    .modal-tag-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2s infinite;
+      flex-shrink: 0;
+    }
+
+    .modal h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(24px, 6vw, 34px);
+      font-weight: 700;
+      line-height: 1.15;
+      color: var(--dark);
+      margin-bottom: 10px;
+    }
+
+    .modal > .modal-content > p {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.65;
+      margin-bottom: 28px;
+      font-weight: 300;
+    }
+
+    .field { margin-bottom: 14px; }
+
+    .field label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 7px;
+    }
+
+    .field input {
+      width: 100%;
+      background: var(--bg);
+      border: 1.5px solid #e2ddd6;
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 16px; /* 16px prevents iOS zoom */
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+      -webkit-appearance: none;
+    }
+
+    .field input:focus {
+      border-color: var(--accent);
+      background: var(--white);
+    }
+
+    .field input::placeholder { color: #c4bdb5; }
+    .field input.invalid { border-color: #d94f4f; background: #fff5f5; }
+    .field input.valid   { border-color: var(--accent); background: #f0faf5; }
+
+    .phone-hint {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 5px;
+      display: block;
+    }
+    .phone-hint.error   { color: #d94f4f; }
+    .phone-hint.success { color: var(--accent); }
+
+    .btn-submit {
+      width: 100%;
+      margin-top: 12px;
+      padding: 17px;
+      background: var(--accent);
+      color: var(--white);
+      border: none;
+      border-radius: 12px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+      -webkit-appearance: none;
+      touch-action: manipulation;
+    }
+
+    .btn-submit:active { background: var(--accent-light); transform: scale(0.98); }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .error-msg {
+      color: #d94f4f;
+      font-size: 12px;
+      margin-top: 10px;
+      display: none;
+      font-weight: 500;
+    }
+
+    .success-msg {
+      text-align: center;
+      padding: 16px 0 8px;
+      display: none;
+    }
+
+    .success-icon {
+      width: 60px; height: 60px;
+      border-radius: 50%;
+      background: var(--accent-pale);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 14px;
+      font-size: 26px;
+      color: var(--accent);
+    }
+
+    .success-msg h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 24px;
+      color: var(--dark);
+      margin-bottom: 8px;
+    }
+
+    .success-msg p { font-size: 14px; color: var(--muted); }
+
+    /* ── PAGE ── */
+    .page { min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* HEADER */
+    .header {
+      padding: 20px 24px;
+      max-width: 1100px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--dark);
+    }
+    .logo span { color: var(--accent); }
+
+    /* HERO — mobile first */
+    .hero {
+      padding: 16px 24px 48px;
+      max-width: 1100px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+    .hero-eyebrow::before {
+      content: '';
+      width: 20px; height: 2px;
+      background: var(--accent);
+    }
+
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(36px, 10vw, 64px);
+      font-weight: 900;
+      line-height: 1.08;
+      color: var(--dark);
+      margin-bottom: 18px;
+      letter-spacing: -0.02em;
+    }
+
+    .hero h1 em { font-style: italic; color: var(--accent); }
+
+    .hero-desc {
+      font-size: 16px;
+      color: var(--muted);
+      line-height: 1.75;
+      font-weight: 300;
+      margin-bottom: 32px;
+    }
+
+    .hero-stats {
+      display: flex;
+      gap: 28px;
+      flex-wrap: wrap;
+    }
+
+    .stat-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--dark);
+      display: block;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* VIDEO SECTION */
+    .video-section {
+      background: var(--dark);
+      padding: 56px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .video-section::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 30% 50%, rgba(42,107,79,0.15) 0%, transparent 65%);
+      pointer-events: none;
+    }
+
+    .video-inner {
+      max-width: 860px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent-light);
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(24px, 6vw, 40px);
+      font-weight: 700;
+      color: var(--white);
+      text-align: center;
+      margin-bottom: 32px;
+      line-height: 1.2;
+    }
+
+    .video-wrapper {
+      width: 100%;
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .video-wrapper video {
+      width: 100%;
+      display: block;
+      max-height: 520px;
+      object-fit: contain;
+    }
+
+    /* DIVIDER */
+    .divider {
+      padding: 56px 24px 0;
+      max-width: 860px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .divider-line { flex: 1; height: 1px; background: #ddd8d0; }
+    .divider-text {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    /* CALENDAR SECTION */
+    .calendar-section {
+      padding: 48px 24px 80px;
+      max-width: 660px;
+      margin: 0 auto;
+      width: 100%;
+      text-align: center;
+    }
+
+    .calendar-section h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(26px, 7vw, 42px);
+      font-weight: 700;
+      line-height: 1.15;
+      color: var(--dark);
+      margin-bottom: 14px;
+    }
+
+    .calendar-section p {
+      font-size: 16px;
+      color: var(--muted);
+      line-height: 1.7;
+      font-weight: 300;
+      margin-bottom: 36px;
+    }
+
+    .btn-calendar {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: var(--accent);
+      color: var(--white);
+      padding: 18px 36px;
+      border-radius: 12px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      box-shadow: 0 4px 20px rgba(42,107,79,0.25);
+      transition: background 0.2s, transform 0.15s;
+      touch-action: manipulation;
+      width: 100%;
+      max-width: 340px;
+    }
+
+    .btn-calendar:active { background: var(--accent-light); transform: scale(0.98); }
+    .btn-calendar svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+    /* FOOTER */
+    footer {
+      margin-top: auto;
+      border-top: 1px solid #e8e3dc;
+      padding: 24px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* DESKTOP */
+    @media (min-width: 768px) {
+      .header { padding: 28px 40px; }
+      .hero {
+        padding: 20px 40px 64px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 60px;
+        align-items: center;
+      }
+      .hero-stats { gap: 36px; }
+      .hero-desc { max-width: 420px; }
+      .hero-visual-card {
+        background: var(--white);
+        border-radius: 20px;
+        padding: 32px;
+        box-shadow: 0 24px 60px rgba(26,23,20,0.1);
+        position: relative;
+        overflow: hidden;
+      }
+      .hero-visual-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--accent), var(--accent-light));
+      }
+      .video-section { padding: 80px 40px; }
+      .calendar-section { padding: 64px 40px 100px; }
+      .btn-calendar { width: auto; }
+      .modal { padding: 52px 44px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── POPUP OVERLAY ── -->
+<div id="overlay">
+  <div class="modal">
+    <div class="modal-deco"></div>
+    <div class="modal-content">
+      <div class="modal-tag">
+        <span class="modal-tag-dot"></span>
+        Exklusiver Zugang
+      </div>
+      <h2>Kurz vorstellen,<br/>dann geht's los.</h2>
+      <p>Trage deine Daten ein und erhalte sofort kostenlosen Zugang zum Video.</p>
+
+      <div id="form-area">
+        <div class="field">
+          <label>Vorname</label>
+          <input type="text" id="firstname" placeholder="Max" autocomplete="given-name" />
+        </div>
+        <div class="field">
+          <label>Nachname</label>
+          <input type="text" id="lastname" placeholder="Mustermann" autocomplete="family-name" />
+        </div>
+        <div class="field">
+          <label>Telefonnummer</label>
+          <input type="tel" id="phone" placeholder="+49 151 000 0000" oninput="validatePhone(this)" autocomplete="tel" />
+          <span class="phone-hint" id="phoneHint">z.B. +49 151 12345678 oder +43 664 1234567</span>
+        </div>
+        <button class="btn-submit" id="submitBtn" onclick="handleSubmit()">
+          Jetzt Video ansehen →
+        </button>
+        <div class="error-msg" id="errorMsg">Bitte alle Felder korrekt ausfüllen.</div>
+      </div>
+
+      <div class="success-msg" id="successMsg">
+        <div class="success-icon">✓</div>
+        <h3>Perfekt!</h3>
+        <p>Deine Daten wurden gespeichert.<br/>Viel Spaß mit dem Video!</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MAIN PAGE ── -->
+<div class="page">
+
+  <header>
+    <div class="header">
+      <div class="logo">Eichinger<span>.</span>Digital</div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-text">
+      <div class="hero-eyebrow">Für Unternehmer &amp; Teams</div>
+      <h1>Onboarding<br/><em>vollständig</em><br/>automatisieren.</h1>
+      <p class="hero-desc">Erfahre, wie du deinen Onboarding-Prozess mit smarter Automatisierung auf das nächste Level hebst — und dabei Zeit, Geld und Nerven sparst.</p>
+      <div class="hero-stats">
+        <div class="stat">
+          <span class="stat-num">80%</span>
+          <span class="stat-label">Zeitersparnis</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">100%</span>
+          <span class="stat-label">Automatisiert</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">∞</span>
+          <span class="stat-label">Skalierbar</span>
+        </div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="hero-visual-card">
+        <div style="font-size:36px;margin-bottom:14px;">⚡</div>
+        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--dark);margin-bottom:8px;">Automatisches Onboarding</div>
+        <div style="font-size:14px;color:var(--muted);line-height:1.6;">Kein manuelles Einrichten mehr — dein System übernimmt alles vom ersten Tag an.</div>
+        <div style="margin-top:20px;background:var(--accent);color:var(--white);padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;display:inline-block;">Jetzt kostenlos ansehen</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="video-section">
+    <div class="video-inner">
+      <div class="section-label">▶ Das Video</div>
+      <h2 class="section-title">Sieh selbst, wie es funktioniert.</h2>
+      <div class="video-wrapper">
+        <video controls playsinline preload="metadata">
+          <source src="Onboarding_automation.mp4" type="video/mp4" />
+          Dein Browser unterstützt kein HTML5-Video.
+        </video>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider">
+    <div class="divider-line"></div>
+    <div class="divider-text">Nächster Schritt</div>
+    <div class="divider-line"></div>
+  </div>
+
+  <section class="calendar-section">
+    <h2>Bereit für deinen<br/>kostenlosen Call?</h2>
+    <p>Buche jetzt einen 30-minütigen Termin — kostenlos und unverbindlich. Wir schauen gemeinsam, wie wir dein Onboarding automatisieren können.</p>
+    <a href="https://calendly.com/eichingerdigitalservices/30min" target="_blank" class="btn-calendar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+      Termin buchen
+    </a>
+  </section>
+
+  <footer>
+    © 2025 Eichinger Digital Services · Alle Rechte vorbehalten
+  </footer>
+
+</div>
+
+<script>
+  const SHEET_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE";
+
+  function validatePhone(input) {
+    const val = input.value.replace(/\s/g, '');
+    const hint = document.getElementById('phoneHint');
+    const atDE = /^(\+43|0043|0)[1-9][0-9]{6,12}$|^(\+49|0049|0)[1-9][0-9]{9,11}$/;
+    if (val.length < 4) {
+      input.classList.remove('valid','invalid');
+      hint.className = 'phone-hint';
+      hint.textContent = 'z.B. +49 151 12345678 oder +43 664 1234567';
+    } else if (atDE.test(val)) {
+      input.classList.remove('invalid'); input.classList.add('valid');
+      hint.className = 'phone-hint success';
+      hint.textContent = '✓ Gültige Nummer';
+    } else {
+      input.classList.remove('valid'); input.classList.add('invalid');
+      hint.className = 'phone-hint error';
+      hint.textContent = '✗ Ungültig – bitte AT (+43) oder DE (+49) Format';
+    }
+  }
+
+  function handleSubmit() {
+    const first = document.getElementById('firstname').value.trim();
+    const last  = document.getElementById('lastname').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const err   = document.getElementById('errorMsg');
+    const btn   = document.getElementById('submitBtn');
+    const phoneClean = phone.replace(/\s/g, '');
+    const atDE = /(\+43|0043|0)[1-9][0-9]{6,12}$|(\+49|0049|0)[1-9][0-9]{9,11}$/;
+
+    if (!first || !last || !phone) {
+      err.textContent = 'Bitte alle Felder ausfüllen.';
+      err.style.display = 'block';
+      return;
+    }
+    if (!atDE.test(phoneClean)) {
+      err.textContent = 'Bitte eine gültige AT (+43) oder DE (+49) Nummer eingeben.';
+      err.style.display = 'block';
+      document.getElementById('phone').classList.add('invalid');
+      return;
+    }
+
+    err.style.display = 'none';
+    btn.disabled = true;
+    btn.textContent = 'Wird gespeichert…';
+
+    let iframe = document.getElementById('hidden_iframe');
+    if (!iframe) {
+      iframe = document.createElement('iframe');
+      iframe.id = 'hidden_iframe';
+      iframe.name = 'hidden_iframe';
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+    }
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = SHEET_URL;
+    form.target = 'hidden_iframe';
+    form.style.display = 'none';
+
+    const fields = { vorname: first, nachname: last, telefon: phone, zeitstempel: new Date().toLocaleString('de-DE') };
+    Object.entries(fields).forEach(([key, val]) => {
+      const input = document.createElement('input');
+      input.type = 'hidden'; input.name = key; input.value = val;
+      form.appendChild(input);
+    });
+
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+
+    setTimeout(() => {
+      document.getElementById('form-area').style.display = 'none';
+      document.getElementById('successMsg').style.display = 'block';
+    }, 600);
+
+    setTimeout(() => {
+      const overlay = document.getElementById('overlay');
+      overlay.style.transition = 'opacity 0.6s ease';
+      overlay.style.opacity = '0';
+      setTimeout(() => overlay.style.display = 'none', 600);
+    }, 2500);
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') handleSubmit(); });
+</script>
+</body>
+</html>
